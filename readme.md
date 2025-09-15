@@ -1,11 +1,16 @@
 # Wind Assignment 1
+**Hand-in on 5th of October**
 
 How to write MD files: https://www.markdownguide.org/cheat-sheet/
 
-## File structure
-One file for computation, another file for tools (functions).
+## Program structure
+> The program runs from `main.py`, and calls functions from `windtools.py`
+* **main.py**: Holds the main loop for the program.
+* **windtools.py**: Hold the helper functions.
 
 ## Issues / Tasks
+
+### Program
 
 ```python
 '''use BEM to determine this best
@@ -27,3 +32,6 @@ end
                 
 
 ```
+
+### Overleaf
+Create an Overleaf document from the template provided on Learn.

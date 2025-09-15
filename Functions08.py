@@ -1,5 +1,7 @@
 import numpy as np
 
+
+
 def bem_single_element(r, c, beta, V0, omega, theta_p, Cl, Cd, R=89.17, B=3):
     rho = 1.225
     theta = np.deg2rad(theta_p + beta)
