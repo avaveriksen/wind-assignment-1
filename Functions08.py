@@ -65,3 +65,8 @@ def bem_single_element(r, c, beta, V0, omega, theta_p, Cl, Cd, R=89.17, B=3):
     pn = 0.5 * rho * (Vrel**2) * c * Cn
     pt = 0.5 * rho * (Vrel**2) * c * Ct
     return pn, pt, a, aprime, F
+
+tc_target = 0.324151
+alpha = 6.2
+cl, cd = interpolate_from_table(tc_target, alpha)
+print(f"Interpolated Cl: {cl}, Cd: {cd}")
