@@ -1,6 +1,23 @@
 import numpy as np
+import pandas as pd
+from scipy.interpolate import interp1d
+import os
 
-
+#Interpolation function for Cl and Cd based on alpha and t/c
+def interpolate_from_table(tc_target, alpha, folder="interpolated-tables"): 
+    # Format t/c to match filename (e.g., 0.241 -> 'FFA_W3-0.241.csv')
+    rounded_tc = round(tc_target, 4) # Round to avoid floating point issues
+    fname = f"FFA_W3-{rounded_tc}.csv"
+    fpath = os.path.join(folder, fname)
+    if not os.path.exists(fpath):
+        raise FileNotFoundError(f"No table for t/c={tc_target} found in {folder}")
+    df = pd.read_csv(fpath)
+    # Interpolate for alpha
+    cl_interp = interp1d(df['alpha'], df['cl'], kind='linear', fill_value='extrapolate')
+    cd_interp = interp1d(df['alpha'], df['cd'], kind='linear', fill_value='extrapolate')
+    cl = cl_interp(alpha)
+    cd = cd_interp(alpha)
+    return cl, cd
 
 def bem_single_element(r, c, beta, V0, omega, theta_p, Cl, Cd, R=89.17, B=3):
     rho = 1.225
