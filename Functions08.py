@@ -3,6 +3,24 @@ import pandas as pd
 from scipy.interpolate import interp1d
 import os
 
+df = pd.read_csv("bladedat.txt", sep=r"\s+",header=None)
+
+# Select a row (e.g. row 1 = second row in table)
+Row = 1
+
+# Assign variables
+r = df.iloc[Row, 0]       # radius [m]
+c = df.iloc[Row, 1]       # chord length [m]
+beta = df.iloc[Row, 2]    # twist angle [deg]
+tc = df.iloc[Row, 3] / 100  # convert % to fraction
+R = df.iloc[-1,0] # Rotor radius [m]
+# Example: fixed values you define, not from table
+tip_speed_ratio = 6
+theta_p = 0  # pitch angle [deg], if you want to set it yourself
+
+V0=10 # This is an arbritrary value for the wind speed which we can normalize for later, when comparing optimal cp 
+omega = tip_speed_ratio * V0 / R 
+
 #Interpolation function for Cl and Cd based on alpha and t/c
 def interpolate_from_table(tc_target, alpha, folder="interpolated-tables"): 
     # Format t/c to match filename (e.g., 0.241 -> 'FFA_W3-0.241.csv')
@@ -19,9 +37,8 @@ def interpolate_from_table(tc_target, alpha, folder="interpolated-tables"):
     cd = cd_interp(alpha)
     return cl, cd
 
-def bem_single_element(r, c, beta, V0, omega, theta_p, Cl, Cd, R=89.17, B=3):
+def bem_single_element(r, c, beta, tip_speed_ratio, theta_p, tc_target, R, B=3):
     rho = 1.225
-    theta = np.deg2rad(theta_p + beta)
     a = 0.0
     aprime = 0.0
     f_relax = 0.1
@@ -30,12 +47,17 @@ def bem_single_element(r, c, beta, V0, omega, theta_p, Cl, Cd, R=89.17, B=3):
     
     for i in range(max_iter):
         # Flow angle
-        phi = np.arctan(((1 - a) * V0) / ((1 + aprime) * omega * r))
+        phi = np.arctan(((1 - a) ) / ((1 + aprime) * tip_speed_ratio * r/R))
         
+        theta = np.deg2rad(beta + theta_p)  # Total pitch angle in radians
+        # Angle of attack
+        alpha = np.rad2deg(theta-phi)
         # Tip loss factor
         F = (2 / np.pi) * np.arccos(np.exp(-(B * (R - r)) / (2 * r * np.sin(abs(phi)))))
         F = max(F, 1e-5)
         
+        #Cl and Cd from interpolation of t/c 
+        Cl, Cd = interpolate_from_table(tc_target, alpha)
         # Aero coefficients
         Cn = Cl * np.cos(phi) + Cd * np.sin(phi)
         Ct = Cl * np.sin(phi) - Cd * np.cos(phi)
@@ -61,12 +83,12 @@ def bem_single_element(r, c, beta, V0, omega, theta_p, Cl, Cd, R=89.17, B=3):
         a, aprime = a_new, aprime_new
     
     # Relative wind speed
-    Vrel = np.sqrt((V0 * (1 - a))**2 + (omega * r * (1 + aprime))**2)
+    Vrel = V0 * np.sqrt((1 - a)**2 + (tip_speed_ratio * r/R * (1 + aprime))**2)
     pn = 0.5 * rho * (Vrel**2) * c * Cn
     pt = 0.5 * rho * (Vrel**2) * c * Ct
     return pn, pt, a, aprime, F
 
-tc_target = 0.324151
-alpha = 6.2
-cl, cd = interpolate_from_table(tc_target, alpha)
-print(f"Interpolated Cl: {cl}, Cd: {cd}")
+
+# Print to check
+print("r =", r, "m")
+print("c ="
