@@ -3,8 +3,26 @@ import os
 import pandas as pd
 
 class Tools:
+    
 
-    def bem_single_element(r, c, beta, V0, omega, theta_p, file, R=89.17, B=3):
+    def read_blade_data(Row):
+        df = pd.read_csv("bladedat.txt", sep=r"\s+",header=None)
+
+        # Assign variables from blade data table 
+        r = df.iloc[Row, 0]       # radius [m]
+        c = df.iloc[Row, 1]       # chord length [m]
+        beta = df.iloc[Row, 2]    # twist angle [deg]
+        tc = df.iloc[Row, 3] / 100  # convert % to fraction
+        R = df.iloc[-1,0] # Rotor radius [m]
+        rounded_tc = round(tc, 4) # Round to avoid floating point issues
+        fname = f"FFA_W3-{rounded_tc}.csv"
+        fpath = os.path.join("interpolated-tables", fname)
+        if not os.path.exists(fpath):
+            raise FileNotFoundError(f"No table for t/c={tc} found in interpolated-tables")
+        
+        return r,c,beta,tc,R,fpath
+    
+    def bem_single_element(r, c, beta, V0, omega, theta_p, file, R, B=3):
         '''Compute the BEM algorithm for a single element'''
 
          # Load aerodynamic data from the file
