@@ -5,10 +5,12 @@ import os
 
 df = pd.read_csv("bladedat.txt", sep=r"\s+",header=None)
 
+A_MIN, A_MAX = 0.0, 0.95   # axial induction bounds for turbine mode
+AP_MIN, AP_MAX = 0.0, 1.0  # tangential induction bounds for turbine mode
 # Select a row (e.g. row 1 = second row in table)
-Row = 1
+Row = 2
 
-# Assign variables
+# Assign variables from blade data table 
 r = df.iloc[Row, 0]       # radius [m]
 c = df.iloc[Row, 1]       # chord length [m]
 beta = df.iloc[Row, 2]    # twist angle [deg]
@@ -16,7 +18,7 @@ tc = df.iloc[Row, 3] / 100  # convert % to fraction
 R = df.iloc[-1,0] # Rotor radius [m]
 # Example: fixed values you define, not from table
 tip_speed_ratio = 6
-theta_p = 0  # pitch angle [deg], if you want to set it yourself
+theta_p = 3  # pitch angle [deg], if you want to set it yourself
 
 V0=10 # This is an arbritrary value for the wind speed which we can normalize for later, when comparing optimal cp 
 omega = tip_speed_ratio * V0 / R 
@@ -53,31 +55,38 @@ def bem_single_element(r, c, beta, tip_speed_ratio, theta_p, tc_target, R, B=3):
         # Angle of attack
         alpha = np.rad2deg(theta-phi)
         # Tip loss factor
-        F = (2 / np.pi) * np.arccos(np.exp(-(B * (R - r)) / (2 * r * np.sin(abs(phi)))))
+
+        sphi = max(abs(np.sin(phi)), 1e-6) # avoid division by zero
+        cphi = max(abs(np.cos(phi)), 1e-6) # avoid division by zero
+
+        F = (2 / np.pi) * np.arccos(np.exp(-(B * (R - r)) / (2 * r * sphi)))
         F = max(F, 1e-5)
         
         #Cl and Cd from interpolation of t/c 
         Cl, Cd = interpolate_from_table(tc_target, alpha)
         # Aero coefficients
-        Cn = Cl * np.cos(phi) + Cd * np.sin(phi)
-        Ct = Cl * np.sin(phi) - Cd * np.cos(phi)
+        Cn = Cl * cphi + Cd * sphi
+        Ct = Cl * sphi - Cd * cphi
         sigma = (c * B) / (2 * np.pi * r)  # Solidity
         
         # Glauert correction
         if a < 1/3:
-            a_ast = ((sigma * Cn) * (1 - a)) / (4 * F * np.sin(phi)**2)
+            a_ast = ((sigma * Cn) * (1 - a)) / (4 * F * sphi**2)
         else:
-            dCT = (((1 - a)**2) * Cn * sigma) / (np.sin(phi)**2)
+            dCT = (((1 - a)**2) * Cn * sigma) / (sphi**2)
             a_ast = 0.246 * (dCT / F) + 0.0586 * (dCT / F)**2 + 0.0883 * (dCT / F)**3
         
-        a_new = f_relax * a_ast + a * (1 - f_relax)
+        a_trial      = a      + f_relax * (a_ast      - a)
+        aprime_ast = (((sigma * Ct) * (1 + a_ast)) / (4 * F * sphi * cphi))
+        aprime_trial = aprime + f_relax * (aprime_ast - aprime)
         
-        aprime_ast = (((sigma * Ct) * (1 + a_ast)) / (4 * F * np.sin(phi) * np.cos(phi)))
-        aprime_new = f_relax * aprime_ast + aprime * (1 - f_relax)
-        
+        if Cn <= 0:  a_trial = 0.5 * (a + a_trial)
+        if Ct <= 0: aprime_trial = 0.5 * (aprime + aprime_trial)
+        a_new      = np.clip(a_trial,      A_MIN, A_MAX)
+        aprime_new = np.clip(aprime_trial, AP_MIN, AP_MAX)
         # Convergence check
-        if abs(a_new - a) < tol and abs(aprime_new - aprime) < tol:
-            a, aprime = a_new, aprime_new
+        if abs(a_trial - a) < tol and abs(aprime_trial - aprime) < tol:
+            a, aprime = a_trial, aprime_trial
             break
         
         a, aprime = a_new, aprime_new
@@ -91,4 +100,15 @@ def bem_single_element(r, c, beta, tip_speed_ratio, theta_p, tc_target, R, B=3):
 
 # Print to check
 print("r =", r, "m")
-print("c ="
+print("c =", c, "m")
+print("beta =", beta, "deg")
+print("t/c =", tc)
+
+pn, pt, a_out, aprime_out, F_out = bem_single_element(
+    r, c, beta, tip_speed_ratio=tip_speed_ratio, theta_p=theta_p, R=R, tc_target=tc
+)
+
+print("\n--- BEM element result ---")
+print(f"r/R = {r/R:.3f}  |  c/r = {c/r:.3f}  |  beta = {beta:.2f} deg")
+print(f"a = {a_out:.4f}  |  a' = {aprime_out:.4f}  |  F = {F_out:.3f}")
+print(f"pn = {pn:.3f} N/m  |  pt = {pt:.3f} N/m")
