@@ -4,8 +4,11 @@ import pandas as pd
 
 class Tools:
 
-    def bem_single_element(r, c, beta, V0, omega, theta_p, Cl, Cd, R=89.17, B=3):
+    def bem_single_element(r, c, beta, V0, omega, theta_p, file, R=89.17, B=3):
         '''Compute the BEM algorithm for a single element'''
+
+         # Load aerodynamic data from the file
+        df = pd.read_csv(file)
 
         rho = 1.225
         theta = np.deg2rad(theta_p + beta)
@@ -22,6 +25,17 @@ class Tools:
             # Tip loss factor
             F = (2 / np.pi) * np.arccos(np.exp(-(B * (R - r)) / (2 * r * np.sin(abs(phi)))))
             F = max(F, 1e-5)
+
+            alpha = (phi - theta)
+            alpha_deg = np.rad2deg(alpha)
+
+            # Interpolate Cl and Cd from the dataframe
+            cl_interp = np.interp(alpha_deg, df['alpha'], df['cl'])
+            cd_interp = np.interp(alpha_deg, df['alpha'], df['cd'])
+            Cl = cl_interp
+            Cd = cd_interp
+
+
 
             # Aero coefficients
             Cn = Cl * np.cos(phi) + Cd * np.sin(phi)
