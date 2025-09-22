@@ -85,6 +85,17 @@ class Tools:
         pt = 0.5 * rho * (Vrel ** 2) * c * Ct
         return pn, pt, a, aprime, F
 
+    def extend_bladedata():
+        source = pd.read_csv("bladedat.txt", sep=r"\s+", header=None)
+        mylist = []
+        for row in range(0, 18):
+            fname = f"FFA_W3-{round(source.iloc[row, 3] / 100, 4)}.csv"
+            mylist.append(fname)
+
+        source[4] = mylist
+        file_name = os.getcwd() + "\\extended_bladedata.csv"
+        source.to_csv(file_name, index=False)
+
 class Interpolations:
     def interp_tc(self):
         # data provided
