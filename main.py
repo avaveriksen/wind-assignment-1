@@ -1,6 +1,7 @@
 from windtools import Tools, Interpolations # Our toolbox of helper functions
 import numpy as np 
 import pandas as pd
+import matplotlib.pyplot as plt
 if __name__ == '__main__':
     '''main loop'''
 
@@ -39,3 +40,19 @@ if __name__ == '__main__':
     print("Power matrix (kW):")
     print(P_kW)
     print("Max power (kW):", np.max(P_kW), "is at", P_kW[np.unravel_index(np.argmax(P_kW), P_kW.shape)])
+
+    # Calculate power coefficient Cp
+    Cp_matrix = P_kW / (0.5 * 1.225 * np.pi * R**2 * V0**3)  # Power coefficient
+    print(Cp_matrix)
+    
+    
+    # Create grids for plotting
+    TSR, Pitch = np.meshgrid(pitch_grid, tsr_grid)
+
+    plt.figure(figsize=(8,6))
+    cp_contour = plt.contourf(TSR, Pitch, Cp_matrix, levels=20, cmap="viridis")
+    plt.colorbar(cp_contour, label="$C_p$")
+    plt.xlabel("Pitch angle θp [deg]")
+    plt.ylabel("Tip-speed ratio λ")
+    plt.title("Contour plot of $C_p(λ, θ_p)$")
+    plt.show()

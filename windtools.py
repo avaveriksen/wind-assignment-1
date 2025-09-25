@@ -33,8 +33,8 @@ class Tools:
         a = 0.0
         aprime = 0.0
         f_relax = 0.1
-        tol = 1e-6
-        max_iter = 100
+        tol = 1e-7
+        max_iter = 150
 
         for i in range(max_iter):
             # Flow angle
@@ -42,7 +42,7 @@ class Tools:
 
             # Tip loss factor
             F = (2 / np.pi) * np.arccos(np.exp(-(B * (R - r)) / (2 * r * np.sin(abs(phi)))))
-            F = max(F, 1e-5)
+            F = max(F, 1e-6)
 
             alpha = (phi - theta)
             alpha_deg = np.rad2deg(alpha)
@@ -69,7 +69,7 @@ class Tools:
 
             a_new = f_relax * a_ast + a * (1 - f_relax)
 
-            aprime_ast = (((sigma * Ct) * (1 + a_ast)) / (4 * F * np.sin(phi) * np.cos(phi)))
+            aprime_ast = (((sigma * Ct) * (1 + aprime)) / (4 * F * np.sin(phi) * np.cos(phi)))
             aprime_new = f_relax * aprime_ast + aprime * (1 - f_relax)
 
             # Convergence check
