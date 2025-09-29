@@ -1,0 +1,25 @@
+import numpy as np 
+import pandas as pd
+import matplotlib.pyplot as plt
+CP_max = 0.47759863330774155 # From the output of main.py
+V0 = 8.0 # m/s
+R = 89.166 # m
+TSR_opt=9 # From the output of the main.py
+rho = 1.225 # air density in kg/m^3
+P_rated = 10.64*10**6 # Rated power in W
+V0_rated = (P_rated / (0.5 * rho * np.pi * R**2 * CP_max))**(1/3)
+print("Rated wind speed (m/s):", V0_rated)
+omega_max = TSR_opt * V0_rated / R
+print("Max rotational speed (rpm):", omega_max * 60 / (2 * np.pi))
+V = np.linspace(0.1, 25, 400)              # wind-speed axis
+omega_lin = TSR_opt * V / R                 # optimal TSR
+omega = np.minimum(omega_lin, omega_max)    # clamp at rated
+
+plt.figure(figsize=(6,4))
+plt.plot(V, omega, linewidth=2)
+plt.scatter([V0_rated], [omega_max])        # mark rated point
+plt.xlabel("Wind speed V0 [m/s]")
+plt.ylabel("Rotational speed ω [rad/s]")
+plt.title("ω(V0): optimal TSR to rated")
+plt.grid(True, linestyle="--", alpha=0.5)
+plt.show()
