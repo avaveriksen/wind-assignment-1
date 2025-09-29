@@ -132,7 +132,7 @@ class Tools:
             alpha_deg = np.rad2deg(alpha)
 
             # Wrap alpha into [-180, 180] for interpolation
-            alpha_deg = ((alpha_deg + 180) % 360) - 180
+            #alpha_deg = ((alpha_deg + 180) % 360) - 180
 
             # Interpolate Cl and Cd
             Cl = cl_interp_func([[tc, alpha_deg]])[0]
@@ -146,14 +146,14 @@ class Tools:
             F = (2 / np.pi) * np.arccos(
                 np.clip(np.exp(-(B / 2) * (R - r) / (r * np.sin(np.abs(phi)))), 0.0, 1.0)
             )
-            F = np.clip(F, 0.05, 1.0)  # safety clamp to prevent division by zero
+            F = np.clip(F, 0.0001, 1.0)  # safety clamp to prevent division by zero
 
             # Madsen formula for axial induction factor
             CT_star = ((1 - a)**2 * Cn * sigma) / (F * np.sin(phi)**2)
             CT_star = np.clip(CT_star, -1e3, 1e3)  # safety clamp
 
             a_new = 0.246 * CT_star + 0.0586 * CT_star**2 + 0.0883 * CT_star**3
-            a_new = np.clip(a_new, 0.0, 0.95)  # physical limit
+            a_new = f*np.clip(a_new, 0.0, 0.95)+(1-f)*a  # physical limit
 
             # Tangential induction
             a_prime_star = sigma * Ct * (1 + a_prime) / (4 * F * np.sin(phi) * np.cos(phi))
