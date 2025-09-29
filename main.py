@@ -68,26 +68,26 @@ if __name__ == '__main__':
     max_cp_index = np.unravel_index(np.argmax(Cp_matrix), Cp_matrix.shape)
     print("Maximum Cp:", max_cp, "at TSR =", tsr_grid[max_cp_index[0]], "and Pitch =", pitch_grid[max_cp_index[1]])
     print(Cp_matrix)
-"""
+
     T_kN = np.zeros((len(tsr_grid), len(pitch_grid)))
-    print(T_kW)
+   
     for i, lam in enumerate(tsr_grid):
         for j, theta_p in enumerate(pitch_grid):
             omega = lam * V0 / R
             rs, fts = [], []
             for row in range(1, len(pd.read_csv("bladedat.txt", sep=r"\s+", header=None)) - 1):
                 r, c, beta, tc, R, fpath = Tools.read_blade_data(row)
-                pn, pt, a, aprime, F = Tools.bem_single_element(r, c, beta, V0, omega, theta_p, fpath, R)
+                pn, pt, a, a_prime, F, alpha_deg, Cl, Cd = Tools.BEM(R, B, lam, theta_p, beta, c, r, V0, tc, cl_interp_func, cd_interp_func)
                 rs.append(float(r)); fts.append(float(pn))
-            rs = np.array(rs); pn   s = np.array(fts)
-            T_kN[i, j] = np.trapezoid(fts, rs) / 1e3  # thrust in kN
+            rs = np.array(rs); fts = np.array(fts)
+            T_kN[i, j] = np.trapezoid(fts, rs)   # thrust in N
 
     # Calculate thrust coefficient CT
-    CT_matrix = T_kN / (0.5 * 1.225 * np.pi * R**2 * V0**2)  # Thrust coefficient
+    Ct_matrix = T_kN / (0.5 * 1.225 * np.pi * R**2 * V0**2)  # Thrust coefficient
     print(Cp_matrix)
-"""    
     
-    # Create grids for plotting
+    
+"""    # Create grids for plotting
 TSR, Pitch = np.meshgrid(pitch_grid, tsr_grid)
 
 plt.figure(figsize=(8,6))
@@ -96,4 +96,15 @@ plt.colorbar(cp_contour, label="$C_p$")
 plt.xlabel("Pitch angle θp [deg]")
 plt.ylabel("Tip-speed ratio λ")
 plt.title("Contour plot of $C_p(λ, θ_p)$")
+plt.show()
+"""
+    # Create grids for plotting
+TSR, Pitch = np.meshgrid(pitch_grid, tsr_grid)
+
+plt.figure(figsize=(8,6))
+ct_contour = plt.contourf(TSR, Pitch, Ct_matrix, levels=20, cmap="viridis")
+plt.colorbar(ct_contour, label="$C_p$")
+plt.xlabel("Pitch angle θp [deg]")
+plt.ylabel("Tip-speed ratio λ")
+plt.title("Contour plot of $C_T(λ, θ_p)$")
 plt.show()
