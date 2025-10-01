@@ -45,8 +45,11 @@ if __name__ == '__main__':
     B=3 #number of blades
     pitch_grid = np.arange(-4, 3,0.5)         # -4..3
     tsr_grid   = np.arange(5, 10,1)         # 5..10
+
+
+
     P_kW = np.zeros((len(tsr_grid), len(pitch_grid)))
-    
+
     for i, lam in enumerate(tsr_grid):
         for j, theta_p in enumerate(pitch_grid):
             omega = lam * V0 / R
@@ -56,11 +59,10 @@ if __name__ == '__main__':
                 pn, pt, a, a_prime, F, alpha_deg, Cl, Cd = Tools.BEM(R, B, lam, theta_p, beta, c, r, V0, tc, cl_interp_func, cd_interp_func)
                 rs.append(float(r)); pts.append(float(pt))
             rs = np.array(rs); pts = np.array(pts)
-            P_kW[i, j] = B*np.trapezoid(pts * rs * omega, rs)   # power in W
+            P_kW[i, j] = B*np.trapezoid(pts * rs * omega, rs) /1000   # power in kW
 
-    print("Power matrix (kW):")
-    #print(P_kW)
-    #print("Max power (kW):", np.max(P_kW), "is at", P_kW[np.unravel_index(np.argmax(P_kW), P_kW.shape)])
+
+
 
     # Calculate power coefficient CP
     Cp_matrix = P_kW / (0.5 * 1.225 * np.pi * R**2 * V0**3)  # Power coefficient
@@ -68,7 +70,7 @@ if __name__ == '__main__':
     max_cp_index = np.unravel_index(np.argmax(Cp_matrix), Cp_matrix.shape)
     print("Maximum Cp:", max_cp, "at TSR =", tsr_grid[max_cp_index[0]], "and Pitch =", pitch_grid[max_cp_index[1]])
     print(Cp_matrix)
-
+    
     T_kN = np.zeros((len(tsr_grid), len(pitch_grid)))
    
     for i, lam in enumerate(tsr_grid):
@@ -87,7 +89,7 @@ if __name__ == '__main__':
     print(Cp_matrix)
     
     
-"""    # Create grids for plotting
+    # Create grids for plotting
 TSR, Pitch = np.meshgrid(pitch_grid, tsr_grid)
 
 plt.figure(figsize=(8,6))
@@ -97,7 +99,7 @@ plt.xlabel("Pitch angle θp [deg]")
 plt.ylabel("Tip-speed ratio λ")
 plt.title("Contour plot of $C_p(λ, θ_p)$")
 plt.show()
-"""
+
     # Create grids for plotting
 TSR, Pitch = np.meshgrid(pitch_grid, tsr_grid)
 

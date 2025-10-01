@@ -284,7 +284,10 @@ class Tools:
         source[4] = mylist
         file_name = os.getcwd() + "\\extended_bladedata.csv"
         source.to_csv(file_name, index=False)
-    
+
+    def weibull_pdf(v, k, A):
+        """Weibull probability density function."""
+        return (k / A) * (v / A)**(k - 1) * np.exp(-(v / A)**k)    
     
         
 
