@@ -15,6 +15,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import os
 from windtools import Tools
+import numpy as np
 
 class AshesData:
     def __init__(self):
@@ -26,8 +27,16 @@ class AshesData:
         self.BEM_p_t = []
         self.BEM_rs = []
 
+        # Blade data, BEM
+        self.r = []
+        self.c = []
+        self.beta = []
+        self.a = []
+        self.aprime = []
+        self.F = []
+
         #Blade span
-        self.span = [0, 2.64302, 5.37977, 8.20274, 11.1031, 14.071, 17.0953, 20.1641, 23.2647, 26.3837, 29.5076, 32.6228, 35.7156, 38.773, 41.7824, 44.732, 47.6111, 50.4099, 53.1201, 55.7344, 58.247, 60.6534, 62.9501, 65.1352, 67.2076, 69.1675, 71.0159, 72.7545, 74.386, 75.9133, 77.3402, 78.6705, 79.9085, 81.0585, 82.1252, 83.113, 84.0265, 84.8703, 85.6487, 86.366]
+        self.span = (np.array([0, 2.64302, 5.37977, 8.20274, 11.1031, 14.071, 17.0953, 20.1641, 23.2647, 26.3837, 29.5076, 32.6228, 35.7156, 38.773, 41.7824, 44.732, 47.6111, 50.4099, 53.1201, 55.7344, 58.247, 60.6534, 62.9501, 65.1352, 67.2076, 69.1675, 71.0159, 72.7545, 74.386, 75.9133, 77.3402, 78.6705, 79.9085, 81.0585, 82.1252, 83.113, 84.0265, 84.8703, 85.6487, 86.366]) + 2).tolist()
 
     def remove_header(self, input_file, output_file):
         n_lines = 23;
@@ -56,11 +65,30 @@ class AshesData:
         self.BEM_p_t = pts
         self.BEM_rs = rs
 
-    def extract_loads(self):
-        files = ["5ms0deg8tps.txt",
+    def extract_loads(self, set):
+
+        files_A = ["5ms0deg8tps.txt",
                  "9ms0deg8tps.txt",
                  "11ms0deg8tps.txt",
                  "20ms0deg8tps.txt"]
+
+        files_B = ["s5ms0deg8tps.txt",
+                 "s9ms0deg8tps.txt",
+                 "s11ms0deg8tps.txt",
+                 "s20ms0deg8tps.txt"]
+
+        files_C = ["x5ms0deg8tps.txt",
+                   "x9ms0deg8tps.txt",
+                   "x11ms0deg8tps.txt",
+                   "x20ms0deg8tps.txt"]
+
+        if set == 'A':
+            files = files_A
+        elif set == 'B':
+            files = files_B
+        elif set == 'C':
+            files = files_C
+
         for file in files:
             file_name = os.getcwd() + "\\ashes-raw\\" + file
             out = os.getcwd() + "\\ashes-headers-removed\\" + file
@@ -82,21 +110,58 @@ class AshesData:
             self.p_n[i] = df.iloc[n_rows - 1, end-(2*40):end - 40 + 1].values.tolist()
             self.p_t[i] = df.iloc[n_rows - 1, end-(40):end + 1].values.tolist()
 
+    def compare_blades(self):
+        # Get blade data
+        V0 = 9
+        theta_p = 0  # pitch angle
+        R = 89.166  # m
+        omega = lam * V0 / R
+
+        for row in range(1, len(pd.read_csv("bladedat.txt", sep=r"\s+", header=None)) - 1):
+            r, c, beta, tc, R, fpath = Tools.read_blade_data(row)
+            self.r.append(r)
+            self.c.append(c)
+            self.beta.append(beta)
+            pn, pt, a, aprime, F = Tools.bem_single_element(r, c, beta, V0, omega, theta_p, fpath, R)
+            self.a.append(a)
+            self.aprime.append(aprime)
+            self.F.append(F)
+
+
+
+
+
+
 # Program ->
 ash = AshesData()       # instance of AshesData class
-ash.extract_loads()     # clean up raw Ashes output, store distributed load data
+ash.extract_loads(set = 'C')     # clean up raw Ashes output, store distributed load data
+
+fig, axs = plt.subplots(2, 2, figsize=(12, 10))
+#fig.suptitle("Distributed Tangential Loads, a comparison")
 
 for i in range(4):
+    match i:
+        case 0:
+            a, b = [0, 0]
+        case 1:
+            a, b = [0, 1]
+        case 2:
+            a, b = [1, 0]
+        case 3:
+            a, b = [1, 1]
+
     V0 = ash.windspeeds[i]      # Loop over wind speeds
     TSR = 8                     # TSR = 8 used in Ashes simulation
     ash.compute_BEM(V0, TSR)    # Compute BEM of blade with same parameters as in Ashes sim
-    plt.plot(ash.span, ash.p_t[i], '-', label=f'Ashes {ash.windspeeds[i]}') # Plot the comparisons between Ashes and our BEM
-    plt.plot(ash.BEM_rs, ash.BEM_p_t, '-', label=f'BEM {ash.windspeeds[i]}')
-    plt.legend()
-    plt.title(f"Comparison, BEM and Ashes at {ash.windspeeds[i]} [m/s]")
-    plt.xlabel('Span [m]')
-    plt.ylabel('Distributed tangential load [N/m]')
-    plt.grid()
-    plt.savefig(os.getcwd() + f"\\BEM-comparison-outputs\\comparison-{ash.windspeeds[i]}mps.png")
-    plt.cla()
+    axs[a, b].plot(ash.span, ash.p_t[i], '-', label=f'Ashes {ash.windspeeds[i]}', color = 'green') # Plot the comparisons between Ashes and our BEM
+    axs[a, b].plot(ash.BEM_rs, ash.BEM_p_t, '-', label=f'BEM {ash.windspeeds[i]}', color = 'black')
+    axs[a, b].legend()
+    axs[a, b].set_title(f"Comparison, BEM and Ashes at {ash.windspeeds[i]} [m/s]")
+    axs[a, b].grid()
+    #axs[a, b].savefig(os.getcwd() + f"\\BEM-comparison-outputs\\comparison-{ash.windspeeds[i]}mps.png")
+    #plt.cla()
+
+for ax in axs.flat:
+    ax.set(xlabel='Span [m]', ylabel='Distributed tangential load [N/m]')
+fig.savefig(os.getcwd() + f"\\BEM-comparison-outputs\\comparison-full.png", bbox_inches='tight')
 

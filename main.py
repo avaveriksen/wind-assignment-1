@@ -22,8 +22,8 @@ if __name__ == '__main__':
     V0=8.0 # m/s
     R=89.166 # m
 
-    pitch_grid = np.arange(-4, 4)         # -4..3
-    tsr_grid   = np.arange(5, 11)         # 5..10
+    pitch_grid = np.arange(-1, 2.1, 0.1 )         # -4..3
+    tsr_grid   = np.arange(8,9.6 , 0.1)         # 5..10
     P_kW = np.zeros((len(tsr_grid), len(pitch_grid)))
     print(P_kW)
     for i, lam in enumerate(tsr_grid):
@@ -42,7 +42,7 @@ if __name__ == '__main__':
     print("Max power (kW):", np.max(P_kW), "is at", P_kW[np.unravel_index(np.argmax(P_kW), P_kW.shape)])
 
     # Calculate power coefficient Cp
-    Cp_matrix = P_kW / (0.5 * 1.225 * np.pi * R**2 * V0**3)  # Power coefficient
+    Cp_matrix = (P_kW * 1e3) / (0.5 * 1.225 * np.pi * R**2 * V0**3)  # Power coefficient
     print(Cp_matrix)
     
     
